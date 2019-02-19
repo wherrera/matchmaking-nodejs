@@ -2,7 +2,7 @@
 Simple Matchmaking in Node.js
 
 
-##/login?id={user_id}
+## /login?id={user_id}
 ```javascript
 {
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1NTA0NDk1MjcsImlkIjoiMjFkZjllODk2NjdjYjk5OWExNTU5NDJiMWY3NzNhY2VmZTU0N2Y2MyIsImlhdCI6MTU1MDQ0NTkyN30.lyNmrxk54SYZAaPCmlXLHCvdEEAWMx-YTtzDtg4Ue00"
@@ -10,7 +10,7 @@ Simple Matchmaking in Node.js
 ```
 
 
-##/queue?access_token={access_token}&criteria={criteria_string}
+## /queue?access_token={access_token}&criteria={criteria_string}
 ```javascript
 {
     "state": {
@@ -28,7 +28,7 @@ Simple Matchmaking in Node.js
 ```
 
 
-##/poll?access_token={access_token}
+## /poll?access_token={access_token}
 ```javascript
 {
     "player": {
@@ -47,7 +47,7 @@ Simple Matchmaking in Node.js
 ```
 
 
-##/drop?access_token={access_token}
+## /drop?access_token={access_token}
 ```javascript
 {
     "message": "player removed from queue."
