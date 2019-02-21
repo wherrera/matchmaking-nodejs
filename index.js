@@ -35,7 +35,8 @@ const playerManager = new PlayerManager();
 
 const JWT_SECRET = "h28dg926as9821gjhsdf82hkbcxz981";
 const PLAYER_ID_SALT = "9ahk239fb23oi29sdnjk23090u23n";
-const PLAYER_TIMEOUT = 60000; //60sec
+const PLAYER_TIMEOUT = (process.env.PLAYER_TIMEOUT || 60000);
+const MATCHMAKER_INTERVAL = (process.env.MATCHMAKER_INTERVAL || 3000);
 const MAX_PLAYER_COUNT = 2;
 
 const STATE_NOT_IN_QUEUE = 0;
@@ -105,11 +106,11 @@ function matchmaker()
                 }     
             }
 
-        console.log("player: " + JSON.stringify(player));
+        //console.log("player: " + JSON.stringify(player));
     }
 
     if(drop.length > 0) {
-        console.log("==== Dropping ====");
+        //console.log("==== Dropping ====");
         drop.forEach(function(i) {
             playerManager.remove(i);
         });
@@ -222,4 +223,4 @@ engine.get("/drop", function(req, res) {
 
 engine.start();
 
-setInterval(matchmaker, 2000);
+setInterval(matchmaker, MATCHMAKER_INTERVAL);

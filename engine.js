@@ -30,7 +30,7 @@ var handlers = [
         "path" : "/",
         "handler": function(req, res) {
             res.writeHead(200, {'Content-Type': 'application/json'});
-            res.write(`{"message": "root" }`);
+            res.write( JSON.stringify(handlers) );
             res.end();
         }
     }
@@ -91,5 +91,5 @@ exports.handleRequest = async function (req, res) {
 };
 
 exports.start = function () {
-    http.createServer(exports.handleRequest).listen(8080);
+    http.createServer(exports.handleRequest).listen((process.env.PORT || 5000));
 }
