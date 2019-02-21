@@ -59,6 +59,7 @@ const MATCH_STATES = [
 ];
 
 var start = Date.now();
+var m_LastMatchJob = start;
 var currentMatchId = 0;
 
 function CurrentTime() {
@@ -71,6 +72,12 @@ function SHA1(data) {
 
 function matchmaker()
 {
+    let now = Date.now();
+    let lastStarted = now - m_LastMatchJob;
+    m_LastMatchJob = now;
+
+    console.log("Last Matchmaking Job: " + lastStarted + ", in-queue: " + playerManager.playerCount);
+
     let drop = [];
 
     for(let i=0; i < playerManager.playerCount; i++)
@@ -116,6 +123,18 @@ function matchmaker()
         });
     }
 }
+
+engine.get("/status",function(req, res) {
+
+    let now = Date.now();
+    let lastStarted = now - m_LastMatchJob;
+
+    let status = {"status" : "Last Matchmaking Job: " + lastStarted + ", in-queue: " + playerManager.playerCount};
+
+    res.writeHead(200, {'Content-Type': 'application/json'});
+    res.write( JSON.stringify(status) );
+    res.end();
+});
 
 engine.get("/login",function(req, res) {
 
