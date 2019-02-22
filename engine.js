@@ -91,5 +91,5 @@ exports.handleRequest = async function (req, res) {
 };
 
 exports.start = function () {
-    http.createServer(exports.handleRequest).listen((process.env.PORT || 5000));
+    http.createServer(exports.handleRequest).listen((process.env.PORT || 8080));
 }

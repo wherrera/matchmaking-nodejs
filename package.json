@@ -9,6 +9,8 @@
     "node": "8.11.1"
   },
   "dependencies": {
-    "jsonwebtoken": "8.4.0"
+    "async-redis": "^1.1.7",
+    "jsonwebtoken": "8.4.0",
+    "redis": "^2.8.0"
   }
 }
