@@ -22,16 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-const http = require('http');
-const url = require('url');
 const crypto = require("crypto");
 const jwt  = require('jsonwebtoken');
-const engine = require('./engine');
+const express = require('express');
 
 const JWT_SECRET = process.env.JWT_SECRET || "h28dg926as9821gjhsdf82hkbcxz981";
 const PLAYER_ID_SALT = process.env.PLAYER_ID_SALT || "9ahk239fb23oi29sdnjk23090u23n";
 const PLAYER_TIMEOUT = process.env.PLAYER_TIMEOUT || 60000;
 const MATCHMAKER_INTERVAL = process.env.MATCHMAKER_INTERVAL || 3000;
+const PORT = process.env.PORT || 8080;
 const MAX_PLAYER_COUNT = 2;
 
 const STATE_NOT_IN_QUEUE = 0;
@@ -55,15 +54,10 @@ const MATCH_STATES = [
 
 var start = Date.now();
 var m_LastMatchJob = start;
-var currentMatchId = 0;
 
 const redis = require('redis').createClient(process.env.REDIS_URL);
 const {promisify} = require('util');
 const hgetallAsync = promisify(redis.hgetall).bind(redis);
-
-redis.on('error', function (err) {
-    console.log('Redis Error: ' + err);
-});
 
 async function LoadDataModel()
 {
@@ -131,47 +125,73 @@ function SHA1(data) {
     return crypto.createHash("sha1").update(data, "binary").digest("hex");
 }
 
-engine.get("/status",function(req, res) {
+function requiresAuth(req, res, next)
+{
+    let access_token = null;
+    if(req.query.access_token) {
+        access_token = req.query.access_token;
+    }
+    else if(req.body.access_token) {
+        access_token = req.body.access_token;
+    } else {
+        res.status(401).json({"error":"missing access_token"});
+        return;
+    }
+    try{
+        req.token = jwt.verify(access_token, JWT_SECRET);
+    } catch(e) {
+        res.status(500).json({"error":e});
+        return;
+    }
+    if(req.token == null) {
+        res.status(500).json({"error":"auth failed"});
+    } else {
+        next();
+    }
+}
 
-    let now = Date.now();
-    let lastStarted = now - m_LastMatchJob;
+var engine = express();
 
-    let status = {"status" : "Last Matchmaking Job: " + lastStarted};
+engine.use(express.json());
 
-    res.writeHead(200, {'Content-Type': 'application/json'});
-    res.write( JSON.stringify(status) );
-    res.end();
+engine.get("/", function(req, res) {
+    res.json({
+            "status" : "ok",
+            "last-job": Date.now() - m_LastMatchJob
+        });
 });
 
 engine.get("/login",function(req, res) {
 
-    var query = url.parse(req.url, true).query;
+    if(!req.query.id) {
+        res.status(500).json({"error":"missing id"});
+        return;
+    }
 
-    let id = SHA1( query.id + PLAYER_ID_SALT );
+    let user_id = SHA1( req.query.id + PLAYER_ID_SALT );
 
     let token = jwt.sign({
-        "exp": Math.floor(Date.now() / 1000) + (60 * 60), //1hr
-        "id": id
+        "exp": Math.floor(Date.now() / 1000) + (60 * 60 * 24), //24hr
+        "id": user_id
       }, JWT_SECRET);
 
-    res.writeHead(200, {'Content-Type': 'application/json'});
-    res.write( JSON.stringify({"token": token}) );
-    res.end();
+  res.json({
+      "id": user_id,
+      "token": token
+    });
 });
 
-engine.get("/queue", async function(req, res) {
+engine.get("/status", requiresAuth, function(req, res) {
+    res.json({"user" : req.token});
+});
 
-    var query = url.parse(req.url, true).query;
-
-    var token = jwt.verify(query.access_token, JWT_SECRET);
+engine.get("/queue/join", requiresAuth, async function(req, res) {
 
     let dataModel = await LoadDataModel();
 
     dataModel.updateTtl();
 
-    let player_id = token.id;
-
-    let player = dataModel.getById(player_id);
+    let player = dataModel.getById(req.token.id);
 
     let payload = {
         "player": player,
@@ -181,14 +201,12 @@ engine.get("/queue", async function(req, res) {
     if (player == null)
     {
         player = {
-            "id": player_id,
+            "id": req.token.id,
             "matched": false,            
-            "criteria": query.criteria ? query.criteria : "default",
+            "criteria": req.query.criteria ? req.query.criteria : "default",
             "last_seen": CurrentTime()
         }
         payload.player = player;
-
-        console.log("adding player: " + player_id);
 
         dataModel.insert(player);
     }
@@ -197,22 +215,16 @@ engine.get("/queue", async function(req, res) {
             payload.state = MATCH_STATES[STATE_MATCHED_IN_QUEUE];
     }
 
-    res.writeHead(200, {'Content-Type': 'application/json'});
-    res.write( JSON.stringify(payload) );
-    res.end();
+    res.json(payload);
 });
 
-engine.get("/poll",async function(req, res) {
-
-    var query = url.parse(req.url, true).query;
-
-    var token = jwt.verify(query.access_token, JWT_SECRET);
+engine.get("/queue/poll", requiresAuth, async function(req, res) {
 
     let dataModel = await LoadDataModel();
 
     dataModel.updateTtl();
 
-    let player = dataModel.getById(token.id);
+    let player = dataModel.getById(req.token.id);
 
     let payload = {};
 
@@ -232,40 +244,30 @@ engine.get("/poll",async function(req, res) {
         payload.state = MATCH_STATES[STATE_NOT_IN_QUEUE];
     }
 
-    res.writeHead(200, {'Content-Type': 'application/json'});
-    res.write( JSON.stringify(payload) );
-    res.end();
+    res.json(payload);
 });
 
-engine.get("/drop",async function(req, res) {
-
-    var query = url.parse(req.url, true).query;
-
-    var token = jwt.verify(query.access_token, JWT_SECRET);
+engine.get("/queue/drop", requiresAuth, async function(req, res) {
 
     let dataModel = await LoadDataModel();
 
     dataModel.updateTtl();
 
-    let player_id = token.id;
-
-    let player = dataModel.getById(player_id);
+    let player = dataModel.getById(req.token.id);
 
     if(player != null)
     {
         dataModel.delete(player);
         {
-            res.writeHead(200, {'Content-Type': 'application/json'});
-            res.write( JSON.stringify({"message":"player removed from queue."}) );
-            res.end();
+            res.json({"message":"player removed from queue."});
         }
     }
     else {
-        throw "invalid user_id: " + player_id;
+        throw "invalid user_id: " + req.token.id;
     }
 });
 
-engine.start();
+engine.listen(PORT);
 
 setInterval(async function()
 {
@@ -293,7 +295,7 @@ setInterval(async function()
 
                 if(time_since_last_seen > PLAYER_TIMEOUT)
                 {
-                    console.log("player timedout: " + player.id);
+                    console.log("player timed-out: " + player.id);
                     dataModel.delete(player);
                     continue;
                 }
@@ -302,13 +304,13 @@ setInterval(async function()
 
                 if(matched_player != null)
                 {
-                    currentMatchId++;
+                    let match_id = crypto.randomBytes(16).toString("hex");
 
                     player.matched = true;
                     matched_player.matched = true;
 
                     let match = {
-                        "id": currentMatchId,
+                        "id": match_id,
                         "players": [player.id, matched_player.id]
                     };
 

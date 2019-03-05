@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "async-redis": "^1.1.7",
+    "express": "^4.16.4",
     "jsonwebtoken": "8.4.0",
     "redis": "^2.8.0"
   }

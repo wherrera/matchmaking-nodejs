@@ -1,34 +1,36 @@
 # matchmaking-nodejs
 Simple Matchmaking in Node.js
 
+# Authentication API
 ## Login using a unique-id / device-id
-### /login?id={user_id}
+### GET /login?id={user_id}
 ```javascript
 {
     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1NTA0NDk1MjcsImlkIjoiMjFkZjllODk2NjdjYjk5OWExNTU5NDJiMWY3NzNhY2VmZTU0N2Y2MyIsImlhdCI6MTU1MDQ0NTkyN30.lyNmrxk54SYZAaPCmlXLHCvdEEAWMx-YTtzDtg4Ue00"
 }
 ```
 
+# Match Maker API
 ## Enter matchmaking queue
-### /queue?access_token={access_token}&criteria={criteria_string}
+### GET /queue/join?access_token={access_token}&criteria={criteria_string}
 ```javascript
 {
-    "state": {
-        "id": 1,
-        "message": "in queue."
-    },
     "player": {
         "id": "21df9e89667cb999a155942b1f773acefe547f63",
         "name": "player-21df9e89667cb999a155942b1f773acefe547f63",
         "matched": false,
         "criteria": "map:test",
         "last_seen": 15556
+    },
+    "state": {
+        "id": 1,
+        "message": "in queue."
     }
 }
 ```
 
 ## Check matchmaking status
-### /poll?access_token={access_token}
+### GET /queue/poll?access_token={access_token}
 ```javascript
 {
     "player": {
@@ -47,7 +49,7 @@ Simple Matchmaking in Node.js
 ```
 
 ## Match found
-### /poll?access_token={access_token}
+### GET /queue/poll?access_token={access_token}
 ```javascript
 {
     "player": {
@@ -73,7 +75,7 @@ Simple Matchmaking in Node.js
 ```
 
 ## Drop from queue
-### /drop?access_token={access_token}
+### GET /queue/drop?access_token={access_token}
 ```javascript
 {
     "message": "player removed from queue."
