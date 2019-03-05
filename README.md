@@ -1,5 +1,16 @@
 # matchmaking-nodejs
 Simple Matchmaking in Node.js
+---
+
+# Server Deployment / Config
+## Environment Variables
+```
+JWT_SECRET = "Json Web Token Secret"
+PLAYER_ID_SALT = "SHA1 Salt used to create player-id"
+PLAYER_TIMEOUT = "Amount of time in milliseconds to time-out players in queue"
+MATCHMAKER_INTERVAL = "Delay between match-maker cycles"
+PORT = "Port to listen on for HTTP requests"
+```
 
 # Authentication API
 ## Login using a unique-id / device-id

@@ -26,8 +26,8 @@ const crypto = require("crypto");
 const jwt  = require('jsonwebtoken');
 const express = require('express');
 
-const JWT_SECRET = process.env.JWT_SECRET || "h28dg926as9821gjhsdf82hkbcxz981";
-const PLAYER_ID_SALT = process.env.PLAYER_ID_SALT || "9ahk239fb23oi29sdnjk23090u23n";
+const JWT_SECRET = process.env.JWT_SECRET;
+const PLAYER_ID_SALT = process.env.PLAYER_ID_SALT;
 const PLAYER_TIMEOUT = process.env.PLAYER_TIMEOUT || 60000;
 const MATCHMAKER_INTERVAL = process.env.MATCHMAKER_INTERVAL || 3000;
 const PORT = process.env.PORT || 8080;
